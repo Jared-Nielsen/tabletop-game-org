@@ -1,5 +1,5 @@
 import { Button } from "../ui/button";
-import { Mail, X } from "lucide-react";
+import { Mail, X, Check } from "lucide-react";
 import { Invite } from "@/types/invite";
 
 interface InviteActionsProps {
@@ -42,26 +42,42 @@ export const InviteActions = ({
     );
   }
 
-  if (type === 'received' && !invite.decision) {
-    return (
-      <>
+  if (type === 'received') {
+    if (invite.status === 'accepted') {
+      return (
         <Button
-          variant="default"
+          variant="outline"
           size="sm"
-          onClick={() => onDecide(invite, 'Accepted')}
-          className="bg-green-500 hover:bg-green-600"
+          disabled
+          className="bg-black text-white hover:bg-black"
         >
-          Accept
+          <Check className="h-4 w-4 mr-2" />
+          Accepted
         </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => onDecide(invite, 'Declined')}
-        >
-          Decline
-        </Button>
-      </>
-    );
+      );
+    }
+
+    if (!invite.decision) {
+      return (
+        <>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onDecide(invite, 'Accepted')}
+            className="bg-green-500 hover:bg-green-600"
+          >
+            Accept
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => onDecide(invite, 'Declined')}
+          >
+            Decline
+          </Button>
+        </>
+      );
+    }
   }
 
   return null;

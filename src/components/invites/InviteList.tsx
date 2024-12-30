@@ -58,7 +58,7 @@ export const InviteList = ({ invites, onInviteUpdate, type }: InviteListProps) =
         .from("invites")
         .delete()
         .eq("id", inviteId)
-        .eq("user_id", user?.id); // Add this line to ensure users can only delete their own invites
+        .eq("user_id", user?.id);
 
       if (error) throw error;
 
@@ -80,37 +80,75 @@ export const InviteList = ({ invites, onInviteUpdate, type }: InviteListProps) =
 
   const handleDecideInvite = async (invite: Invite, decision: 'Accepted' | 'Declined') => {
     try {
-      // First update the invite with the decision
+      console.log('Starting invite decision process...', { invite, decision });
+
+      // Get the current user's player record
+      const { data: currentPlayer, error: playerError } = await supabase
+        .from("players")
+        .select("id")
+        .eq("auth_id", user?.id)
+        .maybeSingle();
+
+      console.log('Current player query result:', { currentPlayer, playerError });
+
+      if (playerError) throw playerError;
+      if (!currentPlayer) throw new Error("Player record not found");
+
+      // Get the inviter's player record
+      const { data: inviterPlayer, error: inviterError } = await supabase
+        .from("players")
+        .select("id")
+        .eq("auth_id", invite.user_id)
+        .maybeSingle();
+
+      console.log('Inviter player query result:', { inviterPlayer, inviterError });
+
+      if (inviterError) throw inviterError;
+      if (!inviterPlayer) throw new Error("Inviter player record not found");
+
+      // First check if a relationship already exists
+      const { data: existingRelationship, error: checkError } = await supabase
+        .from("player_relationships")
+        .select("*")
+        .eq("upline_id", inviterPlayer.id)
+        .eq("downline_id", currentPlayer.id)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      // First update the invite with the decision and status
       const { error: inviteError } = await supabase
         .from("invites")
         .update({ 
-          decision,
-          date_decided: new Date().toISOString()
+          decision: decision === 'Accepted' ? 'accepted' : 'declined',
+          status: decision === 'Accepted' ? 'accepted' : 'declined',
+          date_decided: new Date().toISOString(),
+          accepted_at: decision === 'Accepted' ? new Date().toISOString() : null,
+          accepted_by_player_id: decision === 'Accepted' ? currentPlayer.id : null
         })
         .eq("id", invite.id);
 
+      console.log('Invite update result:', { inviteError });
+
       if (inviteError) throw inviteError;
 
-      // If accepted, create a player relationship
-      if (decision === 'Accepted') {
-        // Get the current user's player record
-        const { data: playerData, error: playerError } = await supabase
-          .from("players")
-          .select("id")
-          .eq("auth_id", user?.id)
-          .single();
+      // If accepted and no existing relationship, create a player relationship
+      if (decision === 'Accepted' && !existingRelationship) {
+        console.log('Creating player relationship...', {
+          upline_id: inviterPlayer.id,
+          downline_id: currentPlayer.id
+        });
 
-        if (playerError) throw playerError;
-
-        // Create the player relationship
         const { error: relationshipError } = await supabase
           .from("player_relationships")
           .insert({
-            upline_id: invite.user_id,
-            downline_id: playerData.id,
+            upline_id: inviterPlayer.id,
+            downline_id: currentPlayer.id,
             type: 'requested sponsor of',
             status: 'active'
           });
+
+        console.log('Player relationship creation result:', { relationshipError });
 
         if (relationshipError) throw relationshipError;
       }
