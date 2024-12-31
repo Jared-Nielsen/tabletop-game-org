@@ -6,7 +6,7 @@ import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
 import Network from "@/pages/Network";
 import AcceptInvite from "@/pages/AcceptInvite";
-import MyGames from "@/pages/my/MyGames";
+import MyGameSystems from "@/pages/my/MyGameSystems";
 import MyRetailers from "@/pages/my/MyRetailers";
 import MyTournaments from "@/pages/my/MyTournaments";
 import MyConventions from "@/pages/my/MyConventions";
@@ -30,6 +30,11 @@ import Ratings from "@/pages/qualify/Ratings";
 import PrivacyPolicy from "@/pages/footer/PrivacyPolicy";
 import Terms from "@/pages/footer/Terms";
 import Contact from "@/pages/footer/Contact";
+import RetailerSearch from "@/pages/retailers/RetailerSearch";
+import RetailerDetail from "@/pages/retailers/RetailerDetail";
+import CampaignDetail from "@/pages/campaigns/CampaignDetail";
+import MyPurchases from "@/pages/my/MyPurchases";
+import EditCampaign from "@/pages/campaigns/EditCampaign";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +49,8 @@ function App() {
             <Route path="/accept-invite/:token" element={<AcceptInvite />} />
             <Route path="/my/profile" element={<Profile />} />
             <Route path="/my/network" element={<Network />} />
-            <Route path="/my/games" element={<MyGames />} />
+            <Route path="/my/game_systems" element={<MyGameSystems />} />
+            <Route path="/my/game_systems/:id/edit" element={<EditCampaign />} />
             <Route path="/my/exams" element={<MyExams />} />
             <Route path="/my/exams/:examId" element={<TakeExam />} />
             <Route path="/my/retailers" element={<MyRetailers />} />
@@ -52,6 +58,7 @@ function App() {
             <Route path="/my/conventions" element={<MyConventions />} />
             <Route path="/my/products" element={<MyProducts />} />
             <Route path="/my/earnings" element={<MyEarnings />} />
+            <Route path="/my/purchases" element={<MyPurchases />} />
             <Route path="/my/fundraisers" element={<MyFundraisers />} />
             <Route path="/my/inventory" element={<MyInventory />} />
             <Route path="/my/equipment" element={<MyEquipment />} />
@@ -68,6 +75,9 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/retailers/search" element={<RetailerSearch />} />
+            <Route path="/retailers/:id" element={<RetailerDetail />} />
+            <Route path="/campaigns/:id" element={<CampaignDetail />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>

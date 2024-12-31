@@ -15,25 +15,50 @@ export const useRetailerCampaigns = () => {
         .eq("auth_id", user?.id)
         .maybeSingle();
 
-      // Get all campaigns with game system information
+      // Get the campaign type id for standard (retailer) games
+      const { data: typeData, error: typeError } = await supabase
+        .from("campaign_types")
+        .select("id")
+        .eq("name", "Retailer")
+        .maybeSingle();
+
+      if (typeError) {
+        console.error("Error fetching campaign type:", typeError);
+        throw new Error("Failed to fetch campaign type");
+      }
+
+      if (!typeData) {
+        console.error("Campaign type 'Retailer' not found");
+        return []; // Return empty array if type not found
+      }
+
+      // Get all campaigns with game system information and owner alias
       const { data: campaigns, error } = await supabase
         .from("campaigns")
         .select(`
           *,
           campaign_players!inner(*),
-          game_system:game_systems(name)
+          game_system:game_systems(name),
+          owner:campaign_players!inner(
+            player:players(alias)
+          )
         `)
-        .eq("type", "standard")
+        .eq("type_id", typeData.id)
+        .eq("campaign_players.role_type", "owner")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Add is_member flag
+      // Add is_member and is_owner flags
       return campaigns.map(campaign => ({
         ...campaign,
         is_member: campaign.campaign_players.some(
           player => player.player_id === playerData?.id
-        )
+        ),
+        is_owner: campaign.campaign_players.some(
+          player => player.player_id === playerData?.id && player.role_type === 'owner'
+        ),
+        owner_alias: campaign.owner[0]?.player?.alias || null
       }));
     },
     enabled: !!user,
