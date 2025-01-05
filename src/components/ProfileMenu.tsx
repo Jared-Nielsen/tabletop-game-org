@@ -1,6 +1,6 @@
-import { LogOut, User, Gamepad, Store, Trophy, Tent, Package, Users, TestTube, DollarSign, Gift, Box, Settings } from "lucide-react";
+import { LogOut, User, Gamepad, Store, Trophy, Tent, Package, Users, TestTube, DollarSign, Gift, Box, Settings, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -11,27 +11,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth";
 
 const ProfileMenu = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signOut } = useAuth();
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await signOut();
       navigate('/auth');
-      toast({
-        title: "Success",
-        description: "Logged out successfully",
-      });
+      toast.success("Logged out successfully");
     } catch (error) {
       console.error("Error logging out:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to log out",
-      });
+      toast.error("Failed to log out");
     }
   };
 
@@ -45,6 +38,7 @@ const ProfileMenu = () => {
     { label: "My Team", icon: Users, path: "/my/network" },
     { label: "My Exams", icon: TestTube, path: "/my/exams" },
     { label: "My Earnings", icon: DollarSign, path: "/my/earnings" },
+    { label: "My Purchases", icon: ShoppingCart, path: "/my/purchases" },
     { label: "My Fundraisers", icon: Gift, path: "/my/fundraisers" },
     { label: "My Inventory", icon: Box, path: "/my/inventory" },
     { label: "My Equipment", icon: Settings, path: "/my/equipment" },
