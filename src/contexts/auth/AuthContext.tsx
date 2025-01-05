@@ -1,59 +1,100 @@
-import { createContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { AuthContextType } from "./types";
-import { authService } from "./authService";
+import { createContext, useContext, useEffect, useState } from "react";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { AuthContextType, UserRole } from "./types";
 
-export const AuthContext = createContext<AuthContextType>({
+const AuthContext = createContext<AuthContextType>({
   user: null,
-  role: null,
+  session: null,
+  role: "anonymous",
   isLoading: true,
+  signOut: async () => {},
 });
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState<string | null>(null);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [role, setRole] = useState<UserRole>("anonymous");
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setRole("anonymous");
+  };
 
   useEffect(() => {
+    let mounted = true;
+
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await authService.getSession();
-        setUser(session?.user ?? null);
+        // Get initial session
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          const userRole = await authService.fetchUserRole(session.user.id);
-          setRole(userRole);
-        } else {
-          setRole(null);
+        if (mounted) {
+          if (currentSession?.user) {
+            setUser(currentSession.user);
+            setSession(currentSession);
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', currentSession.user.id)
+              .maybeSingle();
+            
+            setRole(profile?.role as UserRole || "user");
+          }
+          setIsLoading(false);
         }
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, newSession) => {
+            if (mounted) {
+              setSession(newSession);
+              setUser(newSession?.user ?? null);
+              if (newSession?.user) {
+                const { data: profile } = await supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', newSession.user.id)
+                  .maybeSingle();
+                
+                setRole(profile?.role as UserRole || "user");
+              } else {
+                setRole("anonymous");
+              }
+              setIsLoading(false);
+            }
+          }
+        );
+
+        return () => {
+          mounted = false;
+          subscription.unsubscribe();
+        };
       } catch (error) {
-        console.error("Error in initializeAuth:", error);
-      } finally {
-        setIsLoading(false);
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initializeAuth();
-
-    const { data: { subscription } } = authService.onAuthStateChange(async (session) => {
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const userRole = await authService.fetchUserRole(session.user.id);
-        setRole(userRole);
-      } else {
-        setRole(null);
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, role, isLoading }}>
+    <AuthContext.Provider value={{ user, session, role, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

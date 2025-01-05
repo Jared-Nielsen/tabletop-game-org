@@ -27,6 +27,10 @@ const Index = () => {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    console.log("Auth state:", { isLoading, user });
+  }, [isLoading, user]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white p-6 space-y-8">
@@ -39,9 +43,9 @@ const Index = () => {
   }
 
   return (
-    <div className="bg-white flex flex-col min-h-screen">
+    <div className="bg-white flex flex-col min-h-screen relative">
       <Navigation />
-      <div className="flex-grow">
+      <div className="flex-grow relative z-10">
         <HeroSection />
         
         {/* Qualify Section */}
@@ -49,9 +53,13 @@ const Index = () => {
           id="qualify"
           title="Get Certified"
           subtitle="QUALIFICATION"
-          className="bg-gray-50"
+          className="bg-gray-50 relative z-10"
         >
-          {user ? <MyPlayerSection /> : <SignUpSection />}
+          {user ? (
+            <MyPlayerSection />
+          ) : (
+            <SignUpSection />
+          )}
         </Section>
 
         {/* Games Section */}
@@ -59,7 +67,7 @@ const Index = () => {
           id="games"
           title="Play Anywhere, Anytime"
           subtitle="GAMES"
-          className="bg-white -mt-12"
+          className="bg-white relative z-10"
         >
           <GamesSection />
         </Section>
@@ -69,7 +77,7 @@ const Index = () => {
           id="recruiting"
           title="Build Your Team"
           subtitle="RECRUITING"
-          className="bg-gray-50"
+          className="bg-gray-50 relative z-10"
         >
           <RecruitingSection />
         </Section>
@@ -79,7 +87,7 @@ const Index = () => {
           id="rewards"
           title="Get Paid to Play"
           subtitle="REWARDS"
-          className="bg-white"
+          className="bg-white relative z-10"
         >
           <RewardsSection />
         </Section>

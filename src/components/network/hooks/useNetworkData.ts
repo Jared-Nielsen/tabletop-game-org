@@ -2,84 +2,65 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NetworkData } from "../types/NetworkTypes";
+import { usePlayerData } from "./usePlayerData";
+import { useRelationshipsData } from "./useRelationshipsData";
+import { useAdminProfiles } from "./useAdminProfiles";
+import { useDownlineData } from "./useDownlineData";
 
-export const useNetworkData = (userId: string | undefined) => {
+export const useNetworkData = (userId: string | undefined, updateTrigger: number = 0) => {
   const [networkData, setNetworkData] = useState<NetworkData>({
     network: null,
     adminProfiles: [],
     activeSponsor: null,
     downlines: [],
-    hasPendingRequest: false
+    hasPendingRequest: false,
+    pendingRelationshipId: null
   });
   const { toast } = useToast();
 
+  const playerId = usePlayerData(userId);
+  const relationships = useRelationshipsData(playerId);
+  const adminProfiles = useAdminProfiles();
+  const downlines = useDownlineData(relationships, playerId);
+
   useEffect(() => {
-    const fetchNetwork = async () => {
-      if (!userId) return;
+    const buildNetworkData = async () => {
+      if (!playerId) return;
 
       try {
-        // Get current player's ID
-        const { data: playerData } = await supabase
-          .from('players')
-          .select('id')
-          .eq('auth_id', userId)
-          .single();
-
-        if (!playerData) return;
-
-        // Check for pending sponsor requests
-        const { data: pendingRequests } = await supabase
-          .from('player_relationships')
-          .select()
-          .eq('downline_id', playerData.id)
-          .eq('status', 'pending')
-          .maybeSingle();
+        // Check for pending requests where player is upline
+        const pendingRequest = relationships.find(
+          (r) => r.upline_id === playerId && r.status === 'pending'
+        );
 
         // Check for active sponsor
-        const { data: activeRelationship } = await supabase
-          .from('player_relationships')
-          .select(`
-            upline:players!player_relationships_upline_id_fkey (
-              id,
-              alias
-            )
-          `)
-          .eq('downline_id', playerData.id)
-          .eq('status', 'active')
-          .maybeSingle();
+        const activeRelationship = relationships.find(
+          (r) => r.downline_id === playerId && r.status === 'active'
+        );
 
-        // Fetch downlines
-        const { data: downlineData } = await supabase
-          .from('player_relationships')
-          .select(`
-            downline:players!player_relationships_downline_id_fkey (
-              id,
-              alias
-            )
-          `)
-          .eq('upline_id', playerData.id)
-          .eq('status', 'active');
+        // Get active sponsor details if exists
+        let activeSponsor = null;
+        if (activeRelationship) {
+          const { data: sponsorData, error: sponsorError } = await supabase
+            .from('players')
+            .select('id, alias')
+            .eq('id', activeRelationship.upline_id)
+            .single();
 
-        // Fetch admin profiles
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .eq('role', 'admin');
-
-        const fetchedDownlines = downlineData?.map(d => ({
-          id: d.downline.id,
-          alias: d.downline.alias
-        })) || [];
-
-        const activeSponsor = activeRelationship ? {
-          uplineId: activeRelationship.upline.id,
-          uplineUsername: activeRelationship.upline.alias
-        } : null;
+          if (sponsorError) {
+            console.error('Error fetching sponsor:', sponsorError);
+          } else if (sponsorData) {
+            activeSponsor = {
+              uplineId: sponsorData.id,
+              uplineUsername: sponsorData.alias
+            };
+          }
+        }
 
         // Create network structure
         const mockNetwork = {
           id: "sponsor",
-          alias: pendingRequests ? "In Review" : "Request a Sponsor",
+          alias: pendingRequest ? "In Review" : "Request a Sponsor",
           children: [
             {
               id: "root",
@@ -90,16 +71,11 @@ export const useNetworkData = (userId: string | undefined) => {
                   alias: "New Invite",
                   children: [],
                 },
-                ...fetchedDownlines.map(downline => ({
+                ...downlines.map(downline => ({
                   id: downline.id,
                   alias: downline.alias,
                   children: [],
-                })),
-                {
-                  id: "right",
-                  alias: "New Invite",
-                  children: [],
-                },
+                }))
               ],
             },
           ],
@@ -107,13 +83,14 @@ export const useNetworkData = (userId: string | undefined) => {
 
         setNetworkData({
           network: mockNetwork,
-          adminProfiles: profiles || [],
+          adminProfiles,
           activeSponsor,
-          downlines: fetchedDownlines,
-          hasPendingRequest: !!pendingRequests
+          downlines,
+          hasPendingRequest: !!pendingRequest,
+          pendingRelationshipId: pendingRequest?.id || null
         });
       } catch (error) {
-        console.error('Error fetching network data:', error);
+        console.error('Error building network data:', error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -122,8 +99,8 @@ export const useNetworkData = (userId: string | undefined) => {
       }
     };
 
-    fetchNetwork();
-  }, [userId, toast]);
+    buildNetworkData();
+  }, [playerId, relationships, adminProfiles, downlines, toast, updateTrigger]);
 
   return networkData;
 };
