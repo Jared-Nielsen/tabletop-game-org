@@ -7,14 +7,15 @@ export interface Tournament {
   location: string;
   venue: string;
   image_url: string | null;
-  prize_pool: number;
-  max_participants?: number;
-  registration_deadline?: string;
-  is_featured?: boolean;
-  tournament_type?: string;
+  prize_pool: number | null;
+}
+
+export interface TournamentEntry {
+  id: string;
+  tournament_id: string;
+  player_id: string;
+  registration_date?: string;
   status?: string;
-  registration_url?: string;
-  created_at?: string;
-  updated_at?: string;
-  carousel_image?: string;
+  final_rank?: number;
+  tournament: Tournament;
 }

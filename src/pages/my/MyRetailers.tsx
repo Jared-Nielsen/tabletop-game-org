@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Retailer, RetailerResponse } from "@/types/retailer";
 
 const MyRetailers = () => {
   const { user } = useAuth();
@@ -40,7 +41,11 @@ const MyRetailers = () => {
         .eq('player_id', playerData.id);
 
       if (retailersError) throw retailersError;
-      return data?.map(pr => pr.retailer) || [];
+      
+      // Transform the data to match RetailerResponse type
+      return (data || []).map(item => ({
+        retailer: item.retailer as Retailer
+      })) as RetailerResponse[];
     },
     enabled: !!user,
   });
@@ -84,7 +89,7 @@ const MyRetailers = () => {
             <p className="text-gray-500">You haven't connected with any retailers yet.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {retailers?.map((retailer) => (
+              {retailers?.map(({ retailer }) => (
                 <div 
                   key={retailer.id} 
                   className="border rounded-lg overflow-hidden shadow-sm cursor-pointer transition-shadow hover:shadow-md"

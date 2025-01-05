@@ -1,5 +1,6 @@
-export interface GameSystem {
-  id: string;
+import { BaseEntity } from './common';
+
+export interface GameSystem extends BaseEntity {
   name: string;
   description: string | null;
   logo_image_url: string | null;
@@ -8,4 +9,11 @@ export interface GameSystem {
   status?: string | null;
   order?: number;
   type_id?: string;
+}
+
+export interface GameSystemBasic {
+  name: string;
+  description?: string | null;
+  logo_image_url?: string | null;
+  id?: string;
 }

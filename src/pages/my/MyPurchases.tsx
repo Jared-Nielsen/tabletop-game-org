@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Receipt, Calendar, DollarSign } from "lucide-react";
+import { DollarSign, Calendar } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth";
 import { format } from "date-fns";
+import { PlayerSession } from "@/types/session";
 
 const MyPurchases = () => {
   const { user } = useAuth();
@@ -45,7 +46,7 @@ const MyPurchases = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as unknown as PlayerSession[];
     },
     enabled: !!user?.id,
   });
@@ -54,7 +55,7 @@ const MyPurchases = () => {
     <PageLayout>
       <div className="container mx-auto px-4 pt-24 pb-12">
         <div className="flex items-center gap-2 mb-8">
-          <Receipt className="w-6 h-6" />
+          <DollarSign className="w-6 h-6" />
           <h1 className="text-3xl font-bold">My Purchases</h1>
         </div>
 
