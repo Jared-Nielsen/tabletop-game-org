@@ -1,105 +1,111 @@
-import Navigation from "@/components/Navigation";
 import { useAuth } from "@/contexts/auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { GameSystemCard } from "@/components/sections/player/GameSystemCard";
-import { PlayerGameAccount } from "@/types/player-game-account";
+import { usePlayerData } from "@/components/network/hooks/usePlayerData";
+import PageLayout from "@/components/PageLayout";
+import { CampaignTable } from "@/components/campaigns/CampaignTable";
+import Section from "@/components/Section";
 
 const MyGames = () => {
   const { user } = useAuth();
+  const playerId = usePlayerData(user?.id);
 
-  const { data: player } = useQuery({
-    queryKey: ['player', user?.email],
+  const { data: campaigns, isLoading, error } = useQuery({
+    queryKey: ['my-campaigns', playerId],
     queryFn: async () => {
+      if (!playerId) return [];
+
       const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('email', user?.email)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: games, isLoading, error } = useQuery({
-    queryKey: ['my-games', user?.id],
-    queryFn: async () => {
-      const { data: playerData, error: playerError } = await supabase
-        .from('players')
-        .select('id')
-        .eq('auth_id', user?.id)
-        .maybeSingle();
-
-      if (playerError) throw playerError;
-      if (!playerData) return [];
-
-      const { data, error: gamesError } = await supabase
-        .from('player_game_accounts')
+        .from('campaigns')
         .select(`
-          account_id,
+          *,
           game_system:game_systems (
             id,
             name,
-            description,
-            logo_image_url,
-            video_url
+            logo_image_url
+          ),
+          campaign_players!inner (
+            player_id,
+            role_type
           )
         `)
-        .eq('player_id', playerData.id);
+        .eq('campaign_players.player_id', playerId);
 
-      if (gamesError) throw gamesError;
-      return data as unknown as PlayerGameAccount[];
+      if (error) throw error;
+      
+      return data?.map(campaign => ({
+        ...campaign,
+        is_owner: campaign.campaign_players[0].role_type === 'owner',
+        is_member: true
+      })) || [];
     },
-    enabled: !!user,
+    enabled: !!playerId,
   });
 
+  // Filter owned campaigns
+  const ownedCampaigns = campaigns?.filter(campaign => campaign.is_owner) || [];
+  // Filter campaigns where player is a participant but not owner
+  const participatingCampaigns = campaigns?.filter(campaign => !campaign.is_owner) || [];
+
+  const handleJoinCampaign = async (campaignId: string) => {
+    // This is a placeholder since we're only showing owned/joined campaigns
+    console.log("Join campaign", campaignId);
+  };
+
+  const handleLeaveCampaign = async (campaignId: string) => {
+    // This is a placeholder since we're only showing owned/joined campaigns
+    console.log("Leave campaign", campaignId);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      <main className="flex-grow bg-white">
-        <div className="container mx-auto px-4 pt-24 pb-12">
-          <h1 className="text-3xl font-bold mb-8">My Games</h1>
-          
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                There was an error loading your games. Please try again later.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {games?.map((game) => (
-                <GameSystemCard 
-                  key={game.game_system.id} 
-                  gameSystem={game.game_system}
-                />
-              ))}
-              <GameSystemCard />
-            </div>
-          )}
-        </div>
-      </main>
-      <footer className="bg-gray-900 text-white py-8">
-        <div className="container mx-auto px-4">
-          <p className="text-center text-sm">
-            © {new Date().getFullYear()} TabletopGame.org. All rights reserved.
-          </p>
-        </div>
-      </footer>
-    </div>
+    <PageLayout>
+      <div className="container mx-auto px-4 pt-24 pb-12">
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              There was an error loading your games. Please try again later.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : (
+          <div className="space-y-12">
+            <Section 
+              id="owned-games"
+              title="Owned Games"
+              subtitle="Games you are running"
+            >
+              <CampaignTable 
+                campaigns={ownedCampaigns} 
+                onJoinCampaign={handleJoinCampaign}
+                onLeaveCampaign={handleLeaveCampaign}
+              />
+            </Section>
+
+            <Section
+              id="playing-games"
+              title="Playing Games"
+              subtitle="Games you are participating in"
+            >
+              <CampaignTable 
+                campaigns={participatingCampaigns}
+                onJoinCampaign={handleJoinCampaign}
+                onLeaveCampaign={handleLeaveCampaign}
+              />
+            </Section>
+          </div>
+        )}
+      </div>
+    </PageLayout>
   );
 };
 

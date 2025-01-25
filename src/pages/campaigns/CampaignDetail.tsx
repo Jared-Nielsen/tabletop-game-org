@@ -1,15 +1,21 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Calendar, Users } from "lucide-react";
-import { format } from "date-fns";
+import { AlertCircle } from "lucide-react";
 import { SessionList } from "@/components/campaigns/SessionList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CampaignHeader } from "@/components/campaigns/CampaignHeader";
+import { AdvertisingTab } from "@/components/campaigns/tabs/AdvertisingTab";
+import { ResourcesTab } from "@/components/campaigns/tabs/ResourcesTab";
+import { PhotosTab } from "@/components/campaigns/tabs/PhotosTab";
+import { ParticipantsTab } from "@/components/campaigns/tabs/ParticipantsTab";
 
 const CampaignDetail = () => {
   const { id } = useParams();
+  const currentUrl = window.location.href;
 
   const { data: campaign, isLoading, error } = useQuery({
     queryKey: ['campaign', id],
@@ -23,6 +29,7 @@ const CampaignDetail = () => {
             logo_image_url
           ),
           retailer:retailers (
+            id,
             name,
             address,
             city,
@@ -39,20 +46,78 @@ const CampaignDetail = () => {
     enabled: !!id,
   });
 
-  const { data: confirmedPlayersCount } = useQuery({
-    queryKey: ['campaign-players-count', id],
+  const { data: participants } = useQuery({
+    queryKey: ['campaign-participants', id],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('campaign_players')
-        .select('*', { count: 'exact', head: true })
-        .eq('campaign_id', id)
-        .eq('status', 'active');
+        .select(`
+          player:players (
+            alias,
+            alias_image_url
+          )
+        `)
+        .eq('campaign_id', id);
 
       if (error) throw error;
-      return count || 0;
+      return data;
     },
     enabled: !!id,
   });
+
+  const { data: resources } = useQuery({
+    queryKey: ['campaign-resources', id],
+    queryFn: async () => {
+      const { data, error } = await supabase.storage
+        .from('campaigns')
+        .list(`${id}/resources`);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: photos } = useQuery({
+    queryKey: ['campaign-photos', id],
+    queryFn: async () => {
+      const { data, error } = await supabase.storage
+        .from('campaigns')
+        .list(`${id}/photos`);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: ads } = useQuery({
+    queryKey: ['campaign-ads', id],
+    queryFn: async () => {
+      console.log('Fetching ads for campaign:', id);
+      const { data, error } = await supabase.storage
+        .from('campaigns')
+        .list(`${id}/ads`);
+
+      if (error) {
+        console.error('Error fetching ads:', error);
+        throw error;
+      }
+      
+      console.log('Raw storage response:', data);
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const getFileUrl = (path: string) => {
+    const url = supabase.storage
+      .from('campaigns')
+      .getPublicUrl(`${id}/${path}`).data.publicUrl;
+    console.log('Generated URL for path:', path);
+    console.log('Full URL:', url);
+    return url;
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -76,55 +141,56 @@ const CampaignDetail = () => {
             </div>
           ) : campaign ? (
             <div>
-              <div className="flex items-center gap-6 mb-6">
-                {campaign.game_system?.logo_image_url && (
-                  <img
-                    src={campaign.game_system.logo_image_url}
-                    alt={campaign.game_system.name}
-                    className="w-24 h-24 object-contain"
-                  />
-                )}
-                <div>
-                  <h1 className="text-3xl font-bold">{campaign.title}</h1>
-                  <p className="text-gray-600">{campaign.game_system?.name}</p>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-6 rounded-lg mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <Users className="w-5 h-5" />
-                      {confirmedPlayersCount} / {campaign.max_players} players
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-5 h-5" />
-                      Created {format(new Date(campaign.created_at), 'MMM d, yyyy')}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-2xl font-bold">${campaign.price}</span>
-                    <span className="text-gray-500">/session</span>
-                  </div>
-                </div>
-                <p className="text-gray-700">{campaign.description}</p>
-              </div>
+              <CampaignHeader
+                gameSystemLogo={campaign.game_system?.logo_image_url}
+                gameSystemName={campaign.game_system?.name}
+                title={campaign.title}
+                currentUrl={currentUrl}
+              />
 
               {campaign.retailer && (
-                <div className="border rounded-lg p-6 mb-8">
-                  <h2 className="text-xl font-semibold mb-4">Location</h2>
-                  <p className="font-medium text-lg">{campaign.retailer.name}</p>
-                  <p className="text-gray-600">{campaign.retailer.address}</p>
-                  <p className="text-gray-600">
-                    {campaign.retailer.city}, {campaign.retailer.state} {campaign.retailer.zip}
+                <div className="mb-6">
+                  <Link 
+                    to={`/retailers/${campaign.retailer.id}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {campaign.retailer.name}
+                  </Link>
+                  <p className="text-sm text-gray-600">
+                    {campaign.retailer.address}, {campaign.retailer.city}, {campaign.retailer.state} {campaign.retailer.zip}
                   </p>
                 </div>
               )}
 
-              <div className="border rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Sessions</h2>
-                <SessionList campaignId={campaign.id} />
-              </div>
+              <Tabs defaultValue="sessions" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="sessions">Sessions</TabsTrigger>
+                  <TabsTrigger value="advertising">Advertising</TabsTrigger>
+                  <TabsTrigger value="resources">Resources</TabsTrigger>
+                  <TabsTrigger value="photos">Photos</TabsTrigger>
+                  <TabsTrigger value="participants">Participants</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="sessions">
+                  <SessionList campaignId={campaign.id} />
+                </TabsContent>
+
+                <TabsContent value="advertising">
+                  <AdvertisingTab ads={ads} getFileUrl={getFileUrl} />
+                </TabsContent>
+
+                <TabsContent value="resources">
+                  <ResourcesTab resources={resources} getFileUrl={getFileUrl} />
+                </TabsContent>
+
+                <TabsContent value="photos">
+                  <PhotosTab photos={photos} getFileUrl={getFileUrl} />
+                </TabsContent>
+
+                <TabsContent value="participants">
+                  <ParticipantsTab participants={participants} />
+                </TabsContent>
+              </Tabs>
             </div>
           ) : (
             <p className="text-gray-500">Campaign not found.</p>

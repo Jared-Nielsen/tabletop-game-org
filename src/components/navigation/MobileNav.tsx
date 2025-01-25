@@ -12,7 +12,6 @@ import {
   User,
   Gamepad,
   Store,
-  Trophy,
   Tent,
   Package,
   Users,
@@ -50,17 +49,15 @@ const MobileNav = ({
 
   const profileMenuItems = [
     { label: "My Profile", icon: User, path: "/my/profile" },
-    { label: "My Game Systems", icon: Gamepad, path: "/my/game_systems" },
+    { label: "My Games", icon: Gamepad, path: "/my/games" },
+    { label: "My Game Systems", icon: Gamepad, path: "/my/gamesystems" },
     { label: "My Retailers", icon: Store, path: "/my/retailers" },
-    { label: "My Tournaments", icon: Trophy, path: "/my/tournaments" },
     { label: "My Conventions", icon: Tent, path: "/my/conventions" },
     { label: "My Products", icon: Package, path: "/my/products" },
     { label: "My Team", icon: Users, path: "/my/network" },
     { label: "My Exams", icon: TestTube, path: "/my/exams" },
     { label: "My Earnings", icon: DollarSign, path: "/my/earnings" },
     { label: "My Fundraisers", icon: Gift, path: "/my/fundraisers" },
-    { label: "My Inventory", icon: Box, path: "/my/inventory" },
-    { label: "My Equipment", icon: Settings, path: "/my/equipment" },
     { label: "Logout", icon: LogOut, onClick: handleLogout },
   ];
 

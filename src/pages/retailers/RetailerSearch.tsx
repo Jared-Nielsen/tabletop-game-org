@@ -38,7 +38,32 @@ const RetailerSearch = () => {
     }
   }, [toast]);
 
-  const { data: retailers, isLoading } = useQuery({
+  // Fetch user's linked retailers
+  const { data: linkedRetailers = [] } = useQuery({
+    queryKey: ['linked-retailers', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data: playerData } = await supabase
+        .from('players')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single();
+
+      if (!playerData) return [];
+
+      const { data: links } = await supabase
+        .from('player_retailers')
+        .select('retailer_id')
+        .eq('player_id', playerData.id)
+        .eq('status', 'active');
+
+      return (links || []).map(link => link.retailer_id);
+    },
+    enabled: !!user
+  });
+
+  const { data: retailers = [], isLoading } = useQuery({
     queryKey: ['retailers', searchQuery, userLocation, rangeInMiles],
     queryFn: async () => {
       let query = supabase
@@ -52,11 +77,15 @@ const RetailerSearch = () => {
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching retailers:', error);
+        throw error;
+      }
 
       // Filter retailers by distance if user location is available and range is valid
       if (userLocation && data && Number(rangeInMiles) > 0) {
-        const filteredData = data.filter(retailer => {
+        return data.filter(retailer => {
+          if (!retailer.lat || !retailer.lng) return false;
           const distance = calculateDistance(
             userLocation.lat,
             userLocation.lng,
@@ -65,7 +94,6 @@ const RetailerSearch = () => {
           );
           return distance <= Number(rangeInMiles);
         });
-        return filteredData;
       }
 
       return data || [];
@@ -169,25 +197,30 @@ const RetailerSearch = () => {
             onRangeUpdate={handleRangeUpdate}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {retailers?.map((retailer) => (
-              <RetailerCard
-                key={retailer.id}
-                retailer={retailer}
-                distance={
-                  userLocation
-                    ? calculateDistance(
-                        userLocation.lat,
-                        userLocation.lng,
-                        retailer.lat,
-                        retailer.lng
-                      )
-                    : undefined
-                }
-                onLink={handleLinkRetailer}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="text-center">Loading retailers...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {retailers?.map((retailer) => (
+                <RetailerCard
+                  key={retailer.id}
+                  retailer={retailer}
+                  distance={
+                    userLocation && retailer.lat && retailer.lng
+                      ? calculateDistance(
+                          userLocation.lat,
+                          userLocation.lng,
+                          retailer.lat,
+                          retailer.lng
+                        )
+                      : undefined
+                  }
+                  onLink={handleLinkRetailer}
+                  isLinked={linkedRetailers.includes(retailer.id)}
+                />
+              ))}
+            </div>
+          )}
 
           {retailers?.length === 0 && !isLoading && (
             <p className="text-center text-gray-500">No retailers found</p>
