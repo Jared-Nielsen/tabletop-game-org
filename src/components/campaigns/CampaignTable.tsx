@@ -28,13 +28,18 @@ export const CampaignTable = ({ campaigns, onJoinCampaign, onLeaveCampaign }: Ca
 
   const handleConfirmAction = async () => {
     if (selectedCampaignId) {
-      if (dialogAction === 'join') {
-        await onJoinCampaign(selectedCampaignId);
-      } else {
-        await onLeaveCampaign(selectedCampaignId);
+      try {
+        if (dialogAction === 'join') {
+          await onJoinCampaign(selectedCampaignId);
+        } else {
+          await onLeaveCampaign(selectedCampaignId);
+        }
+      } catch (error) {
+        console.error('Error during campaign action:', error);
+      } finally {
+        setIsDialogOpen(false);
+        setSelectedCampaignId(null);
       }
-      setIsDialogOpen(false);
-      setSelectedCampaignId(null);
     }
   };
 

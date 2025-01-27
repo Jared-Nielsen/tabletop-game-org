@@ -1,14 +1,14 @@
 import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CampaignFormData } from "./types";
+import { CampaignFormData } from "../types";
 
 type Props = {
   register: UseFormRegister<CampaignFormData>;
   errors: FieldErrors<CampaignFormData>;
 };
 
-export function PlayerCountInputs({ register, errors }: Props) {
+export function PlayerCountSection({ register, errors }: Props) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">

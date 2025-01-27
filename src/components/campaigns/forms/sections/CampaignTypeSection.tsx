@@ -9,12 +9,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { UseFormSetValue } from "react-hook-form";
+import { CampaignFormData } from "../types";
 
 type Props = {
-  setValue: (name: "type_id", value: string) => void;
+  setValue: UseFormSetValue<CampaignFormData>;
+  error?: boolean;
 };
 
-export function CampaignTypeSelect({ setValue }: Props) {
+export function CampaignTypeSection({ setValue, error }: Props) {
   const { data: campaignTypes } = useQuery({
     queryKey: ['campaignTypes'],
     queryFn: async () => {
@@ -29,7 +32,7 @@ export function CampaignTypeSelect({ setValue }: Props) {
   });
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${error ? 'border-red-500 rounded-md border p-2' : ''}`}>
       <Label htmlFor="type_id">Campaign Type</Label>
       <Select
         onValueChange={(value) => {

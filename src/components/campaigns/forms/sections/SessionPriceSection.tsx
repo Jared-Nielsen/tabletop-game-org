@@ -1,14 +1,14 @@
 import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CampaignFormData } from "./types";
+import { SessionFormData } from "../types";
 
 type Props = {
-  register: UseFormRegister<CampaignFormData>;
-  errors: FieldErrors<CampaignFormData>;
+  register: UseFormRegister<SessionFormData>;
+  errors: FieldErrors<SessionFormData>;
 };
 
-export function PriceInput({ register, errors }: Props) {
+export function SessionPriceSection({ register, errors }: Props) {
   return (
     <div className="space-y-2">
       <Label htmlFor="price">Price</Label>
@@ -16,7 +16,9 @@ export function PriceInput({ register, errors }: Props) {
         id="price"
         type="number"
         step="0.01"
-        {...register("price", { 
+        min={0}
+        defaultValue=""
+        {...register("price", {
           required: "Price is required",
           valueAsNumber: true,
           min: {
@@ -24,7 +26,6 @@ export function PriceInput({ register, errors }: Props) {
             message: "Price cannot be negative"
           }
         })}
-        placeholder="0.00"
         className={errors.price ? "border-red-500" : ""}
       />
       {errors.price && (

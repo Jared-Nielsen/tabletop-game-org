@@ -1,14 +1,14 @@
 import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CampaignFormData } from "./types";
+import { CampaignFormData } from "../types";
 
 type Props = {
   register: UseFormRegister<CampaignFormData>;
   errors: FieldErrors<CampaignFormData>;
 };
 
-export function PriceInput({ register, errors }: Props) {
+export function PriceSection({ register, errors }: Props) {
   return (
     <div className="space-y-2">
       <Label htmlFor="price">Price</Label>

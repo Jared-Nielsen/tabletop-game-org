@@ -4,22 +4,22 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { RetailerSelect } from "./RetailerSelect";
-import { GameSystemSelect } from "./GameSystemSelect";
-import { CampaignTypeSelect } from "./CampaignTypeSelect";
-import { PlayerCountInputs } from "./PlayerCountInputs";
-import { PriceInput } from "./PriceInput";
-import { CampaignBasicInfo } from "./CampaignBasicInfo";
-import { FormData } from "./types";
+import { CampaignFormData } from "./types";
 import { usePlayerData } from "@/components/network/hooks/usePlayerData";
+import { BasicInfoSection } from "./sections/BasicInfoSection";
+import { GameSystemSection } from "./sections/GameSystemSection";
+import { RetailerSection } from "./sections/RetailerSection";
+import { CampaignTypeSection } from "./sections/CampaignTypeSection";
+import { PlayerCountSection } from "./sections/PlayerCountSection";
+import { PriceSection } from "./sections/PriceSection";
 
 export function CampaignForm() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const playerId = usePlayerData(user?.id);
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<CampaignFormData>();
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: CampaignFormData) => {
     try {
       if (!user?.id) {
         toast.error("You must be logged in to create a campaign");
@@ -91,12 +91,26 @@ export function CampaignForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
-      <CampaignBasicInfo register={register} errors={errors} />
-      <GameSystemSelect setValue={setValue} />
-      <RetailerSelect setValue={setValue} userId={user?.id} />
-      <CampaignTypeSelect setValue={setValue} />
-      <PlayerCountInputs register={register} errors={errors} />
-      <PriceInput register={register} errors={errors} />
+      <BasicInfoSection register={register} errors={errors} />
+      
+      <GameSystemSection 
+        setValue={setValue} 
+        error={!!errors.game_system_id} 
+      />
+      
+      <RetailerSection 
+        setValue={setValue} 
+        userId={user?.id} 
+      />
+      
+      <CampaignTypeSection 
+        setValue={setValue} 
+        error={!!errors.type_id} 
+      />
+      
+      <PlayerCountSection register={register} errors={errors} />
+      
+      <PriceSection register={register} errors={errors} />
 
       <div className="flex gap-4">
         <Button type="submit">

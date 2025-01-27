@@ -9,17 +9,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { UseFormSetValue } from "react-hook-form";
+import { CampaignFormData } from "../types";
 
 type Props = {
-  setValue: (name: "type_id", value: string) => void;
+  setValue: UseFormSetValue<CampaignFormData>;
+  error?: boolean;
 };
 
-export function CampaignTypeSelect({ setValue }: Props) {
-  const { data: campaignTypes } = useQuery({
-    queryKey: ['campaignTypes'],
+export function GameSystemSection({ setValue, error }: Props) {
+  const { data: gameSystems } = useQuery({
+    queryKey: ['gameSystems'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('campaign_types')
+        .from('game_systems')
         .select('*')
         .order('name');
       
@@ -29,23 +32,23 @@ export function CampaignTypeSelect({ setValue }: Props) {
   });
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="type_id">Campaign Type</Label>
+    <div className={`space-y-2 ${error ? 'border-red-500 rounded-md border p-2' : ''}`}>
+      <Label htmlFor="game_system_id">Game System</Label>
       <Select
         onValueChange={(value) => {
-          setValue("type_id", value);
+          setValue("game_system_id", value);
           if (!value) {
-            toast.error("Please select a campaign type");
+            toast.error("Please select a game system");
           }
         }}
       >
         <SelectTrigger>
-          <SelectValue placeholder="Select type" />
+          <SelectValue placeholder="Select game system" />
         </SelectTrigger>
         <SelectContent>
-          {campaignTypes?.map((type) => (
-            <SelectItem key={type.id} value={type.id}>
-              {type.name}
+          {gameSystems?.map((system) => (
+            <SelectItem key={system.id} value={system.id}>
+              {system.name}
             </SelectItem>
           ))}
         </SelectContent>
