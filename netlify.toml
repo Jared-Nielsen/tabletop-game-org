@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  VITE_SUPABASE_URL = "https://kwpptrhywkyuzadwxgdl.supabase.co"
 
 [context.production.environment]
   VITE_PRODUCTION = "true"
