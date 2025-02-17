@@ -5,6 +5,12 @@
 [build.environment]
   NODE_VERSION = "18"
 
+[context.production.environment]
+  VITE_PRODUCTION = "true"
+
+[context.deploy-preview.environment]
+  VITE_PRODUCTION = "false"
+
 # Uncomment and adjust if you need redirects
 # [[redirects]]
 #   from = "/*"
