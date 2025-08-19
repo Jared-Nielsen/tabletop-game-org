@@ -20,9 +20,9 @@ const ProfileMenu = () => {
 
   const handleLogout = async () => {
     try {
+      toast.success("Logging out...");
       await signOut();
-      navigate('/auth');
-      toast.success("Logged out successfully");
+      // signOut now handles navigation via window.location.href
     } catch (error) {
       console.error("Error logging out:", error);
       toast.error("Failed to log out");

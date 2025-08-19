@@ -21,9 +21,6 @@ const Index = () => {
     }
   }, [location.state]);
 
-  useEffect(() => {
-    console.log("Auth state:", { isLoading, user });
-  }, [isLoading, user]);
 
   if (isLoading) {
     return <LoadingState />;

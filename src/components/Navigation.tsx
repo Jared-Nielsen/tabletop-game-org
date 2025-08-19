@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LogIn } from "lucide-react";
 import ProfileMenu from "./ProfileMenu";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/auth";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -16,8 +16,12 @@ const Navigation = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  
+  // Check if we're on the password reset view
+  const isPasswordReset = location.pathname === '/auth' && searchParams.get('view') === 'update_password';
 
   const scrollToSection = (id: string) => {
     if (location.pathname !== '/') {
@@ -45,50 +49,62 @@ const Navigation = () => {
         <div className="relative flex items-center justify-between h-16">
           <Logo />
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <QualifyNav activeSection={activeSection} scrollToSection={scrollToSection} />
-            <PlayNav activeSection={activeSection} scrollToSection={scrollToSection} />
-            <RecruitNav activeSection={activeSection} scrollToSection={scrollToSection} />
-            <EarnNav activeSection={activeSection} scrollToSection={scrollToSection} />
-            <div className="ml-4">
-              {user ? (
-                <ProfileMenu />
-              ) : (
-                <Button
-                  variant="ghost"
-                  className="text-white hover:text-gold relative z-[60]"
-                  onClick={() => navigate('/auth')}
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Login
-                </Button>
-              )}
-            </div>
-          </div>
+          {/* Hide navigation items during password reset */}
+          {!isPasswordReset && (
+            <>
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center space-x-8">
+                <QualifyNav activeSection={activeSection} scrollToSection={scrollToSection} />
+                <PlayNav activeSection={activeSection} scrollToSection={scrollToSection} />
+                <RecruitNav activeSection={activeSection} scrollToSection={scrollToSection} />
+                <EarnNav activeSection={activeSection} scrollToSection={scrollToSection} />
+                <div className="ml-4">
+                  {user ? (
+                    <ProfileMenu />
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      className="text-white hover:text-gold relative z-[60]"
+                      onClick={() => navigate('/auth')}
+                    >
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Login
+                    </Button>
+                  )}
+                </div>
+              </div>
 
-          {/* Mobile Navigation */}
-          <div className="flex items-center md:hidden">
-            <div className="mr-2">
-              {user ? (
-                <ProfileMenu />
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:text-gold relative z-[60]"
-                  onClick={() => navigate('/auth')}
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span className="sr-only">Login</span>
-                </Button>
-              )}
+              {/* Mobile Navigation */}
+              <div className="flex items-center md:hidden">
+                <div className="mr-2">
+                  {user ? (
+                    <ProfileMenu />
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-white hover:text-gold relative z-[60]"
+                      onClick={() => navigate('/auth')}
+                    >
+                      <LogIn className="h-4 w-4" />
+                      <span className="sr-only">Login</span>
+                    </Button>
+                  )}
+                </div>
+                <MobileNav
+                  activeSection={activeSection}
+                  scrollToSection={scrollToSection}
+                />
+              </div>
+            </>
+          )}
+          
+          {/* Show minimal text during password reset */}
+          {isPasswordReset && (
+            <div className="text-white text-sm">
+              Reset Your Password
             </div>
-            <MobileNav
-              activeSection={activeSection}
-              scrollToSection={scrollToSection}
-            />
-          </div>
+          )}
         </div>
       </div>
     </nav>

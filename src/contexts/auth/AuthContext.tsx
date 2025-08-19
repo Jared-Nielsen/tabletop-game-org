@@ -20,13 +20,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Clear state
       setUser(null);
       setSession(null);
       setRole("anonymous");
+      
+      // Clear any stored tokens
       localStorage.removeItem('sb-kwpptrhywkyuzadwxgdl-auth-token');
+      
+      // Force a page reload to clear any cached state
+      window.location.href = '/';
     } catch (error) {
+      console.error("Sign out error:", error);
       toast.error("Failed to sign out properly");
+      // Even on error, try to clear local state
+      setUser(null);
+      setSession(null);
+      setRole("anonymous");
     }
   };
 
